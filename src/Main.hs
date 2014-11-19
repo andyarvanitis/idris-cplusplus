@@ -6,8 +6,10 @@ import Idris.ElabDecls
 import Idris.REPL
 
 import IRTS.Compiler
+import IRTS.CodegenCommon
 import IRTS.CodegenCpp
 
+import Data.List
 import System.Environment
 import System.Exit
 
@@ -30,7 +32,12 @@ cpp_main opts = do elabPrims
                    loadInputs (inputs opts) Nothing
                    mainProg <- elabMain
                    ir <- compile (Via "cpp") (output opts) mainProg
-                   runIO $ codegenCpp ir
+                   let ir' = if ".cpp" `isSuffixOf` outputFilename ||
+                                ".cc"  `isSuffixOf` outputFilename
+                             then ir {outputType=Raw} 
+                             else ir
+                   runIO $ codegenCpp ir'
+                     where outputFilename = output opts
 
 main :: IO ()
 main = do opts <- getOpts
