@@ -8,25 +8,26 @@ namespace idris {
 
 //-------------------------------------------------------------------------------------------------
 
-void process_args(shared_ptr<VirtualMachine>&, Value&) {
-}
-
-template <typename A, typename... ArgTypes>
-void process_args(shared_ptr<VirtualMachine>& vm, Value& res, A arg, ArgTypes&&... args) {
-
+void process_arg(shared_ptr<VirtualMachine>& vm, Value& res, Value arg) {
   void _idris__123_APPLY0_125_(shared_ptr<VirtualMachine>&, IndexType);
-
   if (res->getTypeId() == Con::typeId) {
     reserve(vm, vm->valstack_top + 2);
     vm->valstack[vm->valstack_top] = res;
-    vm->valstack[vm->valstack_top + 1] = box<typename FromNative<A>::type>(arg);
+    vm->valstack[vm->valstack_top + 1] = arg;
     auto myoldbase = vm->valstack_base;
     vm->valstack_base = vm->valstack_top;
     vm->valstack_top += 2;
     vm_call(vm, _idris__123_APPLY0_125_, myoldbase);
     res = vm->ret;
   }
+}
 
+void process_args(shared_ptr<VirtualMachine>&, Value&) {
+}
+
+template <typename A, typename... ArgTypes>
+void process_args(shared_ptr<VirtualMachine>& vm, Value& res, A&& arg, ArgTypes&&... args) {
+  process_arg(vm, res, box<typename FromNative<A>::type>(arg));
   process_args(vm, res, forward<ArgTypes>(args)...);
 }
 
@@ -35,7 +36,7 @@ void process_args(shared_ptr<VirtualMachine>& vm, Value& res, A arg, ArgTypes&&.
 template <typename RetType, typename... ArgTypes>
 RetType proxy_function(const weak_ptr<VirtualMachine>& vm_weak, 
                        const weak_ptr<BoxedValue>& con_weak, 
-                       ArgTypes... args) {  
+                       ArgTypes&... args) {
 
   // Make sure the vm hasn't been destroyed (nor the function con)
   auto vm = vm_weak.lock();
@@ -48,6 +49,7 @@ RetType proxy_function(const weak_ptr<VirtualMachine>& vm_weak,
   
     auto res = con;
     process_args(vm, res, forward<ArgTypes>(args)...);
+    process_arg(vm, res, res); // Handles FFunctionIO
     auto result = vm->ret;
 
     // Restore the original stack

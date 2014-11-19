@@ -207,9 +207,10 @@ instance CompileInfo CompileCpp where
         generateWrapper :: (FType, Reg) -> ASTNode
         generateWrapper (ty, reg) =
           case ty of
-            FFunction aty rty -> mkCall "LAMBDA_WRAPPER" [translateReg reg, cType aty, cType rty]
-            FFunctionIO -> error "FFunctionIO not supported yet"
+            FFunction aty rty -> ffunc aty rty
+            FFunctionIO aty rty -> ffunc aty rty
             _ -> mkUnbox (T.unpack . (compile info) $ foreignToBoxed ty) $ translateReg reg
+          where ffunc aty rty = mkCall "LAMBDA_WRAPPER" [translateReg reg, cType aty, cType rty]
 
         cType :: FType -> ASTNode
         cType (FArith (ATInt ITNative))       = ASTIdent "int"
