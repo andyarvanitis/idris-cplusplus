@@ -31,3 +31,26 @@ main = do
   putStrLn "Running Idris main"
   putStrLn $ "Greek: " ++ (strTail greek)
 ```
+* Calling a C++ function, including registering for and receiving a callback
+```C++
+// twice.cpp
+#include <functional>
+
+int twice(std::function<int(int)> f, int n) {
+  return f(f(n));
+}
+```
+```idris
+module Main
+
+%include cpp "twice.hpp"
+%link cpp "twice.o"
+
+twice : (Int -> Int) -> Int -> IO Int
+twice f x = mkForeign (FFun "twice(%0,%1)" [FFunction FInt FInt, FInt] FInt) f x
+
+main : IO ()
+main = do
+  c <- twice (*3) 17
+  print c
+```
