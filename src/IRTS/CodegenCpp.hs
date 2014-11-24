@@ -225,7 +225,8 @@ instance CompileInfo CompileCpp where
         cType FPtr = ASTIdent "void*"
         cType FManagedPtr = ASTIdent "shared_ptr<void>"
         cType (FArith ATFloat) = ASTIdent "double"
-        cType FAny = ASTIdent "void*"
+        cType (FAny (Constant c)) = typeConstant (translateConstant c)
+        cType (FAny _) = ASTIdent "void*"
         cType (FFunction a b) = ASTList [cType a, cType b]
 
         foreignToBoxed :: FType -> ASTNode
@@ -241,8 +242,18 @@ instance CompileInfo CompileCpp where
         foreignToBoxed FPtr = ASTIdent ptrTy
         foreignToBoxed FManagedPtr = ASTIdent managedPtrTy
         foreignToBoxed (FArith ATFloat) = ASTIdent floatTy
-        foreignToBoxed FAny = ASTIdent ptrTy
+        foreignToBoxed (FAny (Constant c)) = typeConstant (translateConstant c)
+        foreignToBoxed (FAny _) = ASTIdent ptrTy
         -- foreignToBoxed (FFunction a b) = ASTList [cType a, cType b]
+
+        typeConstant c = ASTIdent $ case c of
+                           (ASTType ASTIntTy)      -> intTy
+                           (ASTType ASTStringTy)   -> stringTy
+                           (ASTType ASTIntegerTy)  -> bigIntTy
+                           (ASTType ASTFloatTy)    -> floatTy
+                           (ASTType ASTCharTy)     -> charTy
+                           (ASTType ASTPtrTy)      -> ptrTy
+                           _                       -> "void"
 
   mkTopBase _ 0  = ASTAssign mkStacktop mkStackbase
   mkTopBase _ n  = ASTAssign mkStacktop (mkAdd mkStackbase (ASTNum (ASTInt n)))
