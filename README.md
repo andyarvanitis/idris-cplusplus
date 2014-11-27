@@ -3,7 +3,6 @@
 ### Motivations for this
 * I felt like improving my Haskell and Idris, and getting familiar with C++11
 * ???
-* Profit
 
 ### Some features/benefits
 * Easy interop with C++ and C, as well as with Objective-C/C++ (with a bit more work)
