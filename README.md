@@ -15,7 +15,7 @@
 * C++11 stdlib has some unicode support (used by this backend)
 * Currently using gcc/clang's __int128_t for quick-and-dirty big int support -- plan to switch to GMP (C++ version)
 * No third-party libraries are currently needed or used for this backend
-* Most of the official tests run successfully -- see the [Makefile](https://github.com/andyarvanitis/idris-cplusplus/blob/master/Makefile)
+* Most of the official Idris tests run successfully -- see the [Makefile](https://github.com/andyarvanitis/idris-cplusplus/blob/master/Makefile)
 
 ### Some code examples
 * UTF-8 support, so this works and produces "βγδ" as output (the C backend doesn't yet)
