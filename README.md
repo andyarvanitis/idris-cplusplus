@@ -1,7 +1,7 @@
 ### Experimental C++11 backend for Idris
 
 ### Motivations for this
-* I felt like improving my Haskell and Idris, and getting familiar with C++11
+* I felt like improving my Haskell and Idris, and getting familiar with new C++11 features
 * ???
 
 ### Some features/benefits
