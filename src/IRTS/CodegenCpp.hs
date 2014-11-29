@@ -32,11 +32,11 @@ import Paths_idris_cpp
 
 -- TODO: better way to do this?
 #if defined(MACOSX) || defined(FREEBSD)
-ccStandard = "-std=c++11 -stdlib=libc++"
-libStandard = "-lc++"
+ccStandard = ["-std=c++11", "-stdlib=libc++"]
+libStandard = ["-lc++"]
 #else
-ccStandard = "-std=c++11 -stdlib=libstdc++"
-libStandard = "-lstdc++"
+ccStandard = ["-std=c++11", "-stdlib=libstdc++"]
+libStandard = ["-lstdc++"]
 #endif
 
 data CompileCpp = CompileCpp Bool -- TODO: just a placeholder
@@ -47,25 +47,24 @@ codegenCpp ci =
                  (outputType ci)
                  (outputFile ci)
                  (includes ci)
-                 (concatMap mkObj (compileObjs ci))
-                 (concatMap mkLib (compileLibs ci) ++
-                     concatMap incdir (importDirs ci))
-                 (concatMap mkFlag (compilerFlags ci))
+                 (compileObjs ci)
+                 (map mkLib (compileLibs ci) ++
+                     map incdir (importDirs ci))
+                 (compilerFlags ci)
                  (debugLevel ci)
     where
-      mkObj f = f ++ " "
-      mkLib l = "-l" ++ l ++ " "
+      mkLib l = "-l" ++ l
       mkFlag l = l ++ " "
-      incdir i = "-I" ++ i ++ " "
+      incdir i = "-I" ++ i
 
 codegenCpp_all ::
      [(Name, SDecl)] -> -- declarations/definitions
      OutputType ->      -- output type
      FilePath ->        -- output file name
      [FilePath] ->      -- include files
-     String ->          -- extra object files`as
-     String ->          -- libraries
-     String ->          -- extra compiler flags
+     [String] ->          -- extra object files`as
+     [String] ->          -- libraries
+     [String] ->          -- extra compiler flags
      DbgLevel ->        -- debug level
      IO ()
 
@@ -91,25 +90,24 @@ codegenCpp_all definitions outputType filename includes objs libs flags dbg = do
             comp <- getCC
             libFlags <- getLibFlags
             incFlags <- getIncFlags
-            let cc = comp ++ " " ++
-                    ccStandard ++ " " ++
-                    ccDbg dbg ++ " " ++
-                    ccFlags ++
-                    " -I " ++ path ++ "/include" ++
-                    " -I. " ++ objs ++ " -x c++ " ++
-                    (if (outputType == Executable) then "" else " -c ") ++
-                    " " ++ tmpn ++
-                    " " ++ libStandard ++ " " ++
-                    " -L " ++ path ++ "/lib" ++
-                    " " ++ libRuntime ++ " " ++
-                    " " ++ libFlags ++
-                    " " ++ incFlags ++
-                    " " ++ libs ++
-                    " " ++ flags ++
-                    " -o " ++ filename
-            exit <- system cc
+            let cc = ccStandard ++
+                     ccDbg dbg ++
+                     ccFlags ++
+                     ["-I"] ++ [path ++ "/include"] ++
+                     ["-I."] ++ objs ++ ["-x", "c++"] ++
+                     (if (outputType == Executable) then [] else ["-c "]) ++
+                     [tmpn] ++
+                     libStandard ++
+                     ["-L"] ++ [path ++ "/lib"] ++
+                     [libRuntime] ++
+                     libFlags ++
+                     incFlags ++
+                     libs ++
+                     flags ++
+                     ["-o", filename]
+            exit <- rawSystem comp cc
             when (exit /= ExitSuccess) $
-              putStrLn ("FAILURE: " ++ cc)
+              putStrLn ("FAILURE: " ++ show cc ++ " " ++ show cc)
     where
       headers xs = concatMap (\h -> let header = case h of ('<':_) -> h
                                                            _ -> "\"" ++ h ++ "\"" in
@@ -121,13 +119,13 @@ codegenCpp_all definitions outputType filename includes objs libs flags dbg = do
 
       -- We're using signed integers now. Make sure we get consistent semantics
       -- out of them from cc. See e.g. http://thiemonagel.de/2010/01/signed-integer-overflow/
-      ccFlags = " -fwrapv -fno-strict-overflow"
+      ccFlags = ["-fwrapv", "-fno-strict-overflow"]
 
       libRuntime = "-lidris_cpp_rts"
 
-      ccDbg DEBUG = "-g"
-      ccDbg TRACE = "-O2"
-      ccDbg _ = "-O2 -DNDEBUG -ftree-vectorize -fno-rtti -fno-exceptions -fomit-frame-pointer"
+      ccDbg DEBUG = ["-g"]
+      ccDbg TRACE = ["-O2"]
+      ccDbg _ = ["-O2", "-DNDEBUG", "-ftree-vectorize", "-fno-rtti", "-fno-exceptions", "-fomit-frame-pointer"]
 
       toDecl :: Name -> String
       toDecl f = "void " ++ translateName f ++ "(" ++ (intercalate ", " fnParams) ++ ");\n"
